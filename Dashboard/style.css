@@ -1,0 +1,332 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+:root {
+    --bg-main: #061620;        
+    --panel-bg: #0b222e;       
+    --panel-header: #081b25;   
+    --border-color: #12303f;
+    --text-white: #ffffff;
+    --text-muted: #90a4ae;
+    --cyan: #00cbd6;
+    --orange: #f07d22;
+    --blue: #3ca0f0;
+    --green: #46b46e;
+    --red: #ef4444;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-white);
+    min-height: 100vh;
+    padding: 24px;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Cabeçalho Premium */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding-bottom: 10px;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo-hexagon {
+    background: transparent;
+    border: 3px solid var(--cyan);
+    color: var(--cyan);
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(0, 203, 214, 0.3);
+}
+
+.main-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.cyan-highlight {
+    color: var(--cyan);
+}
+
+/* Painel de Conexão IP */
+.connection-box {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.input-group label {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.connection-box input {
+    background-color: #091c26;
+    border: 1px solid var(--border-color);
+    color: var(--text-white);
+    padding: 10px 14px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 14px;
+    width: 180px;
+}
+
+.connection-box button {
+    background-color: #0f3547;
+    border: 1px solid var(--border-color);
+    color: var(--text-white);
+    padding: 10px 20px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.connection-box button:hover {
+    background-color: var(--cyan);
+    color: var(--bg-main);
+    border-color: var(--cyan);
+}
+
+/* Layout Grid do Topo (3 Colunas) */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.panel-card {
+    background-color: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.panel-header {
+    background-color: var(--panel-header);
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 15px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-white);
+}
+
+.header-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+}
+
+.btn-action {
+    background-color: var(--cyan);
+    color: var(--bg-main);
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 13px;
+}
+
+.btn-action:hover {
+    opacity: 0.8;
+}
+
+.btn-action:disabled {
+    background-color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+.panel-body {
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.metric-box {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.metric-label {
+    font-size: 14px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.metric-value {
+    font-size: 28px;
+    font-weight: 600;
+}
+
+/* Cores dos Ícones */
+.icon-orange { color: var(--orange); }
+.icon-blue { color: var(--blue); }
+.icon-green { color: var(--green); }
+.icon-red { color: var(--red); }
+.icon-gray { color: var(--text-muted); }
+
+/* Seção do Gráfico e Geral */
+.chart-panel {
+    background-color: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.chart-header {
+    padding: 14px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.chart-area {
+    padding: 20px;
+    height: 380px;
+    position: relative;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+}
+
+/* Rodapé Estilizado */
+footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #081b25;
+    padding: 14px 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Intervenção Manual e Seções */
+.controls-section, .camera-section {
+    margin-bottom: 24px;
+}
+
+.control-panel {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 20px;
+}
+
+.btn-control, .btn-danger {
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-control {
+    background-color: #0f3547;
+    border: 1px solid var(--cyan);
+}
+
+.btn-control:hover {
+    background-color: var(--cyan);
+    color: var(--bg-main);
+}
+
+.btn-danger {
+    background-color: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+}
+
+.btn-danger:hover {
+    background-color: var(--red);
+    color: var(--text-white);
+}
+
+/* Botões do Módulo Fotográfico */
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-download {
+    background-color: var(--green) !important;
+    color: var(--bg-main) !important;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsividade Básica */
+@media (max-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .connection-box {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chocadeira Residencial EmbarcaTech</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-area">
+                <div class="logo-hexagon">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <h1 class="main-title">CHOCADEIRA RESIDENCIAL <span class="cyan-highlight">EMBARCATECH</span></h1>
+            </div>
+            
+            <div class="connection-box">
+                <div class="input-group">
+                    <label for="esp-ip">IP do Sistema:</label>
+                    <input type="text" id="esp-ip" placeholder="100.00.21.1">
+                </div>
+                <button id="btn-connect" onclick="iniciarMonitoramento()">Conectar</button>
+            </div>
+        </header>
+
+        <main class="dashboard-grid">
+            <div class="panel-card">
+                <div class="panel-header">Microclima Interno</div>
+                <div class="panel-body">
+                    <div class="metric-box">
+                        <span class="metric-label"><i class="fa-solid fa-temperature-three-quarters icon-orange"></i> Temp Caixa</span>
+                        <span class="metric-value" id="temp-caixa">-- °C</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label"><i class="fa-solid fa-lock icon-orange" id="icon-porta"></i> Tampa</span>
+                        <span class="metric-value" id="status-porta">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-header">Ambiente (Laboratório)</div>
+                <div class="panel-body">
+                    <div class="metric-box">
+                        <span class="metric-label"><i class="fa-solid fa-temperature-half icon-blue"></i> Temp Ambiente</span>
+                        <span class="metric-value" id="temp-amb">-- °C</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label"><i class="fa-solid fa-droplet icon-green"></i> Umidade Relativa</span>
+                        <span class="metric-value" id="umidade">-- %</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-header">Atuadores</div>
+                <div class="panel-body">
+                    <div class="metric-box">
+                        <span class="metric-label"><i class="fa-solid fa-power-off icon-red" id="icon-lamp"></i> Aquecimento</span>
+                        <span class="metric-value" id="status-lamp">--</span>
+                    </div>
+                    <div class="metric-box">
+                        <span class="metric-label"><i class="fa-solid fa-wind icon-gray" id="icon-fan"></i> Exaustão</span>
+                        <span class="metric-value" id="status-fan">--</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <section class="controls-section">
+            <div class="panel-card" style="width: 100%;">
+                <div class="panel-header">Controle de Intervenção Manual e Sistema</div>
+                <div class="panel-body control-panel">
+                    <button class="btn-control" id="btn-force-lamp" onclick="alternarAtuador('lampada')">
+                        <i class="fa-solid fa-lightbulb"></i> Forçar Lâmpada (On/Auto)
+                    </button>
+                    <button class="btn-control" id="btn-force-fan" onclick="alternarAtuador('ventoinha')">
+                        <i class="fa-solid fa-wind"></i> Forçar Ventoinha (On/Auto)
+                    </button>
+                    <button class="btn-danger" id="btn-reset" onclick="resetarPlaca()">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Resetar Placa
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="camera-section">
+            <div class="chart-panel">
+                <div class="chart-header header-action">
+                    <span>Registro Fotográfico de Segurança (Cartão SD)</span>
+                    <div class="button-group">
+                        <button class="btn-action" id="btn-load-photo" onclick="carregarUltimaFoto()">
+                            <i class="fa-solid fa-camera"></i> Visualizar Foto
+                        </button>
+                        <a id="btn-download-photo" class="btn-action btn-download" style="display: none;">
+                            <i class="fa-solid fa-download"></i> Baixar Imagem
+                        </a>
+                    </div>
+                </div>
+                <div class="chart-area flex-center" id="area-placeholder-camera">
+                    <p>Clique em "Visualizar Foto" para renderizar e carregar a última foto armazenada no SD.</p>
+                </div>
+                <div class="camera-preview-container" id="area-preview-camera" style="display: none; text-align: center; padding: 20px; background-color: #091c26;">
+                    <img id="camera-frame" src="" alt="Última Abertura" style="max-width: 100%; max-height: 420px; border-radius: 6px; border: 2px solid var(--border-color); box-shadow: 0 4px 15px rgba(0,0,0,0.6);">
+                    <p id="photo-timestamp" style="margin-top: 12px; color: var(--text-muted); font-size: 14px; font-style: italic;"></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="chart-panel">
+                <div class="chart-header">Gráfico de Monitoramento Contínuo</div>
+                <div class="chart-area">
+                    <canvas id="graficoHistorico"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <div class="chart-panel">
+                <div class="chart-header header-action">
+                    <span>Histórico Completo (Cartão SD)</span>
+                    <button class="btn-action" id="btn-load-sd" onclick="carregarHistoricoCSV()">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Carregar Dados
+                    </button>
+                </div>
+                <div class="chart-area" id="area-grafico-sd" style="display: none;">
+                    <canvas id="graficoSD"></canvas>
+                </div>
+                <div class="chart-area flex-center" id="area-loading-sd">
+                    <p>Clique em "Carregar Dados" para processar o CSV do Cartão SD.</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <div class="footer-status" id="status-sd">SD Status: Aguardando Conexão</div>
+            <div class="footer-time" id="ultima-att">Atualizado: --/--/---- --:--:--</div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
