@@ -1,6 +1,8 @@
+import time
+time.sleep(3)
+
 import machine
 from machine import Pin, SoftI2C, PWM
-import time
 import network
 import socket
 import ujson
@@ -25,15 +27,15 @@ from rtc_utils import RelogioRTC
 from logger_sd import LoggerSD
 from camera_service import CameraService
 
-# Inicialização do Barramento I2C
+# Inicialização do Barramento I2C compartilhado
 i2c = SoftI2C(sda=Pin(PIN_I2C_SDA), scl=Pin(PIN_I2C_SCL), freq=I2C_FREQ)
 
-# Instanciação dos periféricos base
+# Inicialização dos dispositivos de feedback e leitura base
 sensor = HDC1080(i2c)
 display = criar_display(i2c)
 
 tela_inicial(display)
-time.sleep(3)
+time.sleep(1)
 
 sensor_caixa = SensorDS18B20(PIN_DS18B20)
 sensor_ir = SensorInfravermelho(PIN_INFRAVERMELHO)
@@ -41,7 +43,7 @@ sensor_ir = SensorInfravermelho(PIN_INFRAVERMELHO)
 lampada = ControleRele(PIN_RELE, "LAMPADA")
 ventoinha = ControleVentoinha(PIN_VENTOINHA, "VENTOINHA", ATRASO_VENT_LIGA_MS, ATRASO_VENT_DESLIGA_MS)
 
-# Configuração do Buzzer (GPIO 3 a 5 kHz de acordo com a Kiira)
+# Configuração do Buzzer da placa Kiira (GPIO 3 @ 5 kHz)
 buzzer = PWM(Pin(PIN_BUZZER))
 buzzer.freq(5000)
 buzzer.duty_u16(0)
@@ -50,32 +52,32 @@ relogio = RelogioRTC()
 logger = LoggerSD(PIN_SD_CLK, PIN_SD_CMD, PIN_SD_D0, relogio)
 sd_ok = logger.montar()
 
-# Inicialização do Módulo de Câmara OV5640
+# Inicialização segura da câmera OV5640
 try:
     camera = CameraService()
-    print("Câmara OV5640 inicializada com sucesso.")
+    print("Camera OV5640 inicializada com sucesso.")
 except Exception as e:
-    print("Erro ao inicializar câmara:", e)
+    print("Erro ao inicializar camera:", e)
     camera = None
 
-# Temporizadores não bloqueantes (Janelas de Execução)
+# Temporizadores Não-Bloqueantes
 ultimo_log_ms = time.ticks_ms()
-ultima_leitura_sensores_ms = time.ticks_ms() - 10000  # Força primeira leitura no arranque
+ultima_leitura_sensores_ms = time.ticks_ms() - 10000  # Força leitura imediata no primeiro ciclo
 ultima_foto_tampa_aberta_ms = 0  
 ultimo_print_ms = 0  
 
-# Variáveis globais de dados em cache
+# Variáveis globais de armazenamento em cache
 ultima_temperatura = None
 ultima_umidade = None
 temp_caixa = None
 estado_ir = 0
 
-# Flags de controlo e lógica de transição de estado
+# Flags de controle e estados de transição
 forcar_lampada = False
 forcar_ventoinha = False
 tampa_estava_aberta = False  
 
-# Recuperação automática do último ficheiro guardado no SD após reinicialização
+# Escaneia o SD no boot para encontrar o arquivo de imagem mais recente se a placa reiniciar
 nome_ultima_foto = "Nenhuma"
 if sd_ok:
     try:
@@ -83,9 +85,9 @@ if sd_ok:
         if arquivos:
             arquivos.sort() 
             nome_ultima_foto = arquivos[-1]
-            print("Última foto detetada no Cartão SD:", nome_ultima_foto)
+            print("Ultima foto localizada no SD:", nome_ultima_foto)
     except Exception as e:
-        print("Erro ao varrer diretório do SD:", e)
+        print("Erro ao varrer arquivos do SD:", e)
 
 def conectar_wifi():
     wlan = network.WLAN(network.STA_IF)
@@ -96,7 +98,7 @@ def conectar_wifi():
     time.sleep(1)
 
     try:
-        print("A estabelecer ligação ao Wi-Fi...")
+        print("Conectando ao Wi-Fi...")
         wlan.connect(WIFI_SSID, WIFI_SENHA)
 
         tentativas = 0
@@ -113,7 +115,7 @@ def conectar_wifi():
         return None
 
     except Exception as e:
-        print("Erro crítico no rádio Wi-Fi:", e)
+        print("Erro critico no rádio Wi-Fi:", e)
         return None
 
 def atualizar_sistema():
@@ -124,20 +126,20 @@ def atualizar_sistema():
     agora_ms = time.ticks_ms()
 
     # =========================================================================
-    # 1. MONITORIZAÇÃO IMEDIATA E CONTÍNUA (Prioridade de segurança)
+    # 1. LEITURA CONTÍNUA E IMEDIATA (Segurança e Câmera)
     # =========================================================================
     estado_ir = sensor_ir.status()                
     tampa_aberta = (estado_ir == 0)
 
-    # Gestão de Capturas Fotográficas (Borda de subida ou intervalo de 5 min)
+    # Gerenciamento térmico e captura de imagem por tempo/borda
     if tampa_aberta:
         tirar_foto_agora = False
         
         if not tampa_estava_aberta:
-            print(">>> EVENTO: Tampa aberta detetada! A capturar imagem... <<<")
+            print(">>> EVENTO: Tampa aberta detectada! Fotografando... <<<")
             tirar_foto_agora = True
         elif time.ticks_diff(agora_ms, ultima_foto_tampa_aberta_ms) >= 300000:
-            print(">>> EVENTO: Tampa permanece aberta há 5 minutos! Nova captura... <<<")
+            print(">>> EVENTO: Tampa permanece aberta por 5 minutos! Nova foto... <<<")
             tirar_foto_agora = True
             
         if tirar_foto_agora:
@@ -150,16 +152,16 @@ def atualizar_sistema():
                     nome_ultima_foto = nome_simples 
                     ultima_foto_tampa_aberta_ms = agora_ms 
                 except Exception as e:
-                    print("Erro ao guardar imagem no SD:", e)
+                    print("Erro ao processar/salvar imagem:", e)
             elif not sd_ok:
-                print("Aviso: Cartão SD indisponível para gravação de imagem.")
+                print("Aviso: SD ausente. Captura cancelada.")
             elif camera is None:
-                print("Aviso: Sensor de câmara offline.")
+                print("Aviso: Hardware de camera offline.")
 
     tampa_estava_aberta = tampa_aberta 
 
     # =========================================================================
-    # 2. JANELA DE LEITURA DOS SENSORES A CADA 10 SEGUNDOS (Estabilidade de Barramento)
+    # 2. JANELA DE LEITURA DOS SENSORES A CADA 10 SEGUNDOS (Estabilidade I2C/1-Wire)
     # =========================================================================
     if time.ticks_diff(agora_ms, ultima_leitura_sensores_ms) >= 10000:
         ultima_temperatura = sensor.ler_temperatura() 
@@ -177,38 +179,38 @@ def atualizar_sistema():
             temp_caixa = t_caixa
 
     # =========================================================================
-    # 3. VERIFICAÇÃO DE ALARMES E GESTÃO DE ATUADORES
+    # 3. CONTROLE DE ATUADORES E FILTRAGEM SERIAL
     # =========================================================================
     alarme_ativado = False
     if temp_caixa is not None and temp_caixa > (SETPOINT + 4.0):
         alarme_ativado = True
 
     if alarme_ativado:
-        buzzer.duty_u16(32768)  # Ativa o tom de emergência térmica
+        buzzer.duty_u16(32768)  
     else:
         buzzer.duty_u16(0)      
 
-    # Lógica de Acionamento da Lâmpada (Manual / Setpoint)
+    # Lógica da Lâmpada (Manual / Automática por Setpoint)
     if forcar_lampada:
         if not lampada.estado(): lampada.ligar()
     else:
         lampada.atualizar_por_setpoint(temp_caixa, SETPOINT, tampa_aberta)
 
-    # Lógica de Acionamento da Ventoinha (Manual / Setpoint + 1°C)
+    # Lógica da Ventoinha (Manual / Automática por Setpoint + 1°C)
     if forcar_ventoinha:
         if not ventoinha.estado(): ventoinha.ligar()
     else:
         ventoinha.atualizar_por_setpoint(temp_caixa, SETPOINT, tampa_aberta)
 
-    # Atualização contínua do OLED
+    # Atualiza display OLED
     tela_info(display, ultima_temperatura, ultima_umidade, temp_caixa, not tampa_aberta, lampada.estado(), ventoinha.estado(), SETPOINT, sd_ok)
 
-    # Escrita Periódica no Cartão SD
+    # Registro de Log periódico no Cartão SD
     if time.ticks_diff(agora_ms, ultimo_log_ms) >= INTERVALO_LOG_MS:
         ultimo_log_ms = agora_ms
         logger.salvar(ultima_temperatura, ultima_umidade, temp_caixa, not tampa_aberta, lampada.estado(), ventoinha.estado())
 
-    # Saída Filtrada no Terminal a cada 2 segundos para evitar poluição visual
+    # Exibição serial filtrada a cada 2 segundos para evitar gargalo de buffer
     if time.ticks_diff(agora_ms, ultimo_print_ms) >= 2000:
         ultimo_print_ms = agora_ms
         print("Ta:{}C U:{}% Tc:{}C IR:{} Lamp:{} Vent:{} Alarme:{}".format(
@@ -216,7 +218,8 @@ def atualizar_sistema():
             "FECHADA(1)" if not tampa_aberta else "ABERTA(0)",
             "ON" if lampada.estado() else "OFF", 
             "ON" if ventoinha.estado() else "OFF",
-            "CRÍTICO" if alarme_ativado else "OK"))
+            "CRITICO" if alarme_ativado else "OK"))
+
 
 def json_status(ip):
     return ujson.dumps({
@@ -262,7 +265,7 @@ def iniciar_servidor(wlan):
     s.settimeout(0.2)
 
     ip = wlan.ifconfig()[0]
-    print("Servidor HTTP ativo em: http://{}:{}".format(ip, PORTA_HTTP))
+    print("Servidor ativo em http://{}:{}".format(ip, PORTA_HTTP))
 
     while True:
         atualizar_sistema()
@@ -278,7 +281,7 @@ def iniciar_servidor(wlan):
                 continue
                 
             linha = req.split("\r\n")[0]
-            partes = linha.split(" ")
+            partes = line = linha.split(" ")
             rota = partes[1] if len(partes) > 1 else "/"
 
             if rota == "/api/status":
@@ -297,6 +300,17 @@ def iniciar_servidor(wlan):
             elif rota == "/api/reset":
                 responder_json(cliente, ujson.dumps({"status": "resetando"}))
                 time.sleep(1) 
+                
+                # =========================================================================
+                # DESLIGAMENTO LIMPO: Evita corrupção do cartão SD e travamento do barramento
+                # =========================================================================
+                try:
+                    logger.desmontar()
+                    buzzer.duty_u16(0)
+                    print("Perifericos liberados com sucesso. Reiniciando hardware...")
+                except:
+                    pass
+                
                 machine.reset() 
                 
             elif rota.startswith("/api/foto/recente"):
@@ -314,14 +328,13 @@ def iniciar_servidor(wlan):
                         cliente.sendall(b"Connection: close\r\n")
                         cliente.sendall("Content-Length: {}\r\n\r\n".format(tamanho).encode('utf-8'))
                         
-                        # Transmissão por blocos de 2KB para otimizar velocidade e RAM
                         with open(caminho_foto, "rb") as f:
                             while True:
                                 bloco = f.read(2048)
                                 if not bloco: break
                                 cliente.write(bloco) 
                     except Exception as e:
-                        print("Erro na transmissão binária da imagem:", e)
+                        print("Erro na transmissao da imagem:", e)
                         
             elif rota == "/api/csv":
                 try:
@@ -344,14 +357,14 @@ def iniciar_servidor(wlan):
             except:
                 pass
 
-print("Firmware de inicialização ativado.")
+print("Firmware carregado com sucesso.")
 wlan = conectar_wifi()
 
 if wlan:
     relogio.sincronizar_online()
     iniciar_servidor(wlan)
 else:
-    print("Modo Offline ativo por falha de rede Wi-Fi.")
+    print("Modo local iniciado por indisponibilidade de rede.")
     relogio.ajustar(2026, 6, 11, 14, 30, 0)
     while True:
         atualizar_sistema()
